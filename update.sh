@@ -7,8 +7,10 @@ if [ -z "$GITHUB_ACTIONS" ]; then
 fi
 
 tmpfile=$(mktemp)
-# Remove --dns-verify for faster execution
-./disposable/.generate --dedicated-strict --source-map 2>$tmpfile
+# Run basic generation without slow validation flags
+# --skip-scrape: Skip domain scraping to speed up execution (use static sources only)
+# --max-retry: Reduce retry attempts from 150 to 3 for faster failure handling
+./disposable/.generate --skip-scrape --max-retry 3 2>$tmpfile
 
 # Only commit if there are changes
 if git diff --quiet domains*.txt domains*.json 2>/dev/null; then
