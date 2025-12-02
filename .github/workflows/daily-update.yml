@@ -1,0 +1,64 @@
+name: Daily Domain Update
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    # Runs every day at 00:00 UTC (adjust as needed)
+    - cron: '0 0 * * *'
+  
+  # Allows manual triggering from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  update-domains:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install Python dependencies
+      run: |
+        pip3 install -r disposable/requirements.txt
+    
+    - name: Configure Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+    
+    - name: Make update script executable
+      run: chmod +x update.sh
+    
+    - name: Run domain update
+      run: ./update.sh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if [[ -n $(git status -s) ]]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Display update summary
+      if: steps.check_changes.outputs.changes == 'true'
+      run: |
+        echo "✅ Domain lists updated successfully"
+        git log -1 --pretty=format:"%B"
+    
+    - name: No changes detected
+      if: steps.check_changes.outputs.changes == 'false'
+      run: echo "ℹ️ No changes detected in domain lists"
