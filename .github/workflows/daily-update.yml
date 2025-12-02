@@ -53,6 +53,13 @@ jobs:
           echo "changes=false" >> $GITHUB_OUTPUT
         fi
     
+    - name: Push changes
+      if: steps.check_changes.outputs.changes == 'true'
+      run: |
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
     - name: Display update summary
       if: steps.check_changes.outputs.changes == 'true'
       run: |
